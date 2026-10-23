@@ -278,6 +278,8 @@ class DrawerActions(
     val onPipAutoEnter: (Boolean) -> Unit = {},
     val unfoldedControls: Boolean? = null,
     val onUnfoldedControls: (Boolean) -> Unit = {},
+    val coverControls: Boolean = false,
+    val onCoverControls: (Boolean) -> Unit = {},
     val unfoldedControlsWithController: Boolean = false,
     val onUnfoldedControlsWithController: (Boolean) -> Unit = {},
     val onShareLogs: () -> Unit,
@@ -582,6 +584,9 @@ internal fun SessionDrawer(open: Boolean, requestedPage: SessionDrawerPage, cont
                                     stringResource(R.string.unfolded_controls_with_controller_hint), a.unfoldedControlsWithController,
                                     chipModifier = focus.track(page, "unfolded-controls-with-controller"),
                                     onChange = a.onUnfoldedControlsWithController)
+                                if (a.steam && a.unfoldedControls != null) ToggleRow(host, "cover-controls", stringResource(R.string.cover_controls),
+                                    stringResource(R.string.cover_controls_hint), a.coverControls,
+                                    chipModifier = focus.track(page, "cover-controls"), onChange = a.onCoverControls)
                             }
                             SettingsGroup(stringResource(R.string.drawer_latency)) {
                                 ToggleRow(host, "low-latency-controller", stringResource(R.string.drawer_low_latency_controller),

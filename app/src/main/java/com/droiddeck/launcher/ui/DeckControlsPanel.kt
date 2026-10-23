@@ -37,6 +37,7 @@ class DeckControlsPanel(
     private val onSteamMenu: () -> Unit,
     private val onQam: () -> Unit,
     private val pad: PadBridge? = null,
+    private val cover: Boolean = false,
 ) : LinearLayout(context) {
     private enum class Tab(val label: Int) { GAMEPAD(R.string.deck_tab_gamepad), GRIPS(R.string.deck_tab_grips), LEFT(R.string.deck_tab_left), RIGHT(R.string.deck_tab_right), BOTH(R.string.deck_tab_both) }
 
@@ -47,9 +48,13 @@ class DeckControlsPanel(
     init {
         orientation = VERTICAL
         setBackgroundColor(Color.BLACK)
-        addView(topBar, LayoutParams(LayoutParams.MATCH_PARENT, dp(64)))
-        addView(content, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
-        select(if (pad != null) selectedWithPad else selected)
+        if (cover) {
+            addView(coverButtons(), LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+        } else {
+            addView(topBar, LayoutParams(LayoutParams.MATCH_PARENT, dp(64)))
+            addView(content, LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+            select(if (pad != null) selectedWithPad else selected)
+        }
     }
 
     override fun onDetachedFromWindow() {
@@ -139,6 +144,33 @@ class DeckControlsPanel(
             LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply { rightMargin = dp(6) })
         addView(column(GripButton(context, "R4", context.getString(R.string.deck_right_upper), DeckControls.R4), GripButton(context, "R5", context.getString(R.string.deck_right_lower), DeckControls.R5)),
             LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply { leftMargin = dp(6) })
+    }
+
+    // The cover screen faces away from the player, so the right hand's buttons are on the left
+    private fun coverButtons(): View = LinearLayout(context).apply {
+        orientation = VERTICAL
+        setPadding(dp(12), dp(12), dp(12), dp(12))
+        fun row(buttons: List<View>) = LinearLayout(context).apply {
+            orientation = HORIZONTAL
+            buttons.forEachIndexed { index, button ->
+                addView(button, LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply {
+                    if (index > 0) leftMargin = dp(6)
+                    if (index < buttons.size - 1) rightMargin = dp(6)
+                })
+            }
+        }
+        pad?.let { pad ->
+            val shoulders = listOf(
+                PadButton(context, pad, "RT") { st, d -> st.rightTrigger = if (d) 1f else 0f },
+                PadButton(context, pad, "RB") { st, d -> st.press(PadState.RB, d) },
+                PadButton(context, pad, "LB") { st, d -> st.press(PadState.LB, d) },
+                PadButton(context, pad, "LT") { st, d -> st.leftTrigger = if (d) 1f else 0f },
+            )
+            addView(row(shoulders), LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f).apply { bottomMargin = dp(12) })
+        }
+        val grips = listOf("R4" to DeckControls.R4, "R5" to DeckControls.R5, "L5" to DeckControls.L5, "L4" to DeckControls.L4)
+            .map { (label, bit) -> GripButton(context, label, null, bit) }
+        addView(row(grips), LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
     }
 
     private fun singlePad(right: Boolean): View = LinearLayout(context).apply {
