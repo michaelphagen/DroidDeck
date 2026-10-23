@@ -1297,6 +1297,12 @@ object SessionPrefs {
         prefs(context).edit().putBoolean("unfoldedControls", enabled).apply()
     }
 
+    fun coverControls(context: Context): Boolean = prefs(context).getBoolean("coverControls", false)
+
+    fun setCoverControls(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean("coverControls", enabled).apply()
+    }
+
     fun unfoldedControlsWithController(context: Context): Boolean =
         prefs(context).getBoolean("unfoldedControlsWithController", false)
 
