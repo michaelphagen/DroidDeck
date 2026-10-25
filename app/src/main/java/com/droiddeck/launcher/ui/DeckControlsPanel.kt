@@ -146,31 +146,33 @@ class DeckControlsPanel(
             LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply { leftMargin = dp(6) })
     }
 
-    // The cover screen faces away from the player, so the right hand's buttons are on the left
+    // The cover screen faces away from the player, so the right hand's buttons are on the left.
+    // The upper part stays empty so the palm holding the phone presses nothing.
     private fun coverButtons(): View = LinearLayout(context).apply {
         orientation = VERTICAL
-        setPadding(dp(12), dp(12), dp(12), dp(12))
-        fun row(buttons: List<View>) = LinearLayout(context).apply {
+        setPadding(dp(8), dp(8), dp(8), dp(8))
+        fun row(buttons: List<View?>) = LinearLayout(context).apply {
             orientation = HORIZONTAL
-            buttons.forEachIndexed { index, button ->
-                addView(button, LayoutParams(0, LayoutParams.MATCH_PARENT, 1f).apply {
-                    if (index > 0) leftMargin = dp(6)
-                    if (index < buttons.size - 1) rightMargin = dp(6)
+            listOf(16f, 22f, 24f, 22f, 16f).zip(buttons).forEach { (weight, button) ->
+                addView(button ?: View(context), LayoutParams(0, LayoutParams.MATCH_PARENT, weight).apply {
+                    leftMargin = dp(3)
+                    rightMargin = dp(3)
                 })
             }
         }
-        pad?.let { pad ->
-            val shoulders = listOf(
-                PadButton(context, pad, "RT") { st, d -> st.rightTrigger = if (d) 1f else 0f },
-                PadButton(context, pad, "RB") { st, d -> st.press(PadState.RB, d) },
-                PadButton(context, pad, "LB") { st, d -> st.press(PadState.LB, d) },
-                PadButton(context, pad, "LT") { st, d -> st.leftTrigger = if (d) 1f else 0f },
-            )
-            addView(row(shoulders), LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f).apply { bottomMargin = dp(12) })
-        }
-        val grips = listOf("R4" to DeckControls.R4, "R5" to DeckControls.R5, "L5" to DeckControls.L5, "L4" to DeckControls.L4)
-            .map { (label, bit) -> GripButton(context, label, null, bit) }
-        addView(row(grips), LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f))
+        addView(View(context), LayoutParams(LayoutParams.MATCH_PARENT, 0, 50f))
+        addView(row(listOf(
+            GripButton(context, "R4", null, DeckControls.R4), GripButton(context, "R5", null, DeckControls.R5), null,
+            GripButton(context, "L5", null, DeckControls.L5), GripButton(context, "L4", null, DeckControls.L4),
+        )), LayoutParams(LayoutParams.MATCH_PARENT, 0, 18f))
+        addView(View(context), LayoutParams(LayoutParams.MATCH_PARENT, 0, 7f))
+        val pad = pad
+        addView(row(if (pad == null) List(5) { null } else listOf(
+            PadButton(context, pad, "RT") { st, d -> st.rightTrigger = if (d) 1f else 0f },
+            PadButton(context, pad, "RB") { st, d -> st.press(PadState.RB, d) }, null,
+            PadButton(context, pad, "LB") { st, d -> st.press(PadState.LB, d) },
+            PadButton(context, pad, "LT") { st, d -> st.leftTrigger = if (d) 1f else 0f },
+        )), LayoutParams(LayoutParams.MATCH_PARENT, 0, 25f))
     }
 
     private fun singlePad(right: Boolean): View = LinearLayout(context).apply {
