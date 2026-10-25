@@ -13,6 +13,11 @@ service's `/v2/login/user`) and the login proof token a session's `/connect` ste
 takes. It prints one JSON object and never opens a login or provisions a device.
 Ported from Bannerlator.
 
+`droiddeck-store-ticket.patch` sends delegation-compact MSA tickets ("d=...") to the
+Store and licensing services as "t=...", which they require; without it accounts that
+sign in with a delegation ticket get `store-ticket-format` and no library. Ported from
+Nexus #207 (MIT).
+
 `droiddeck-library-subscriptions.patch` queries fresh subscription membership
 alongside product entitlements using the same Store session, account and market.
 Android can validate a Game Pass child's parent plan when that plan is absent
