@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.droiddeck.launcher.core.FileUtils
 import com.droiddeck.launcher.core.TextureFiltering
 import com.droiddeck.launcher.files.InAppFilePicker
@@ -135,6 +136,9 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
     private var pipAutoEnter by mutableStateOf(false)
     private var unfoldedControls by mutableStateOf(false)
     private var unfoldedControlsWithController by mutableStateOf(false)
+    private var coverControls by mutableStateOf(false)
+    private val coverScreen by lazy { com.droiddeck.launcher.ui.CoverScreenManager(this) }
+    private var coverShown = false
     private var picturePosition by mutableStateOf("center")
 
     private fun applyGameAlignment() {
@@ -161,7 +165,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
     private var handCamera: com.droiddeck.launcher.handtracking.HandCamera? = null
     private var padMotion: com.droiddeck.launcher.input.PadMotion? = null
     private var resumed = false
-    private val deckPadListener: () -> Unit = { uiHandler.post { updatePadMotion(); openDeckRing("deck pad changed"); applyUnfoldedControls() } }
+    private val deckPadListener: () -> Unit = { uiHandler.post { updatePadMotion(); openDeckRing("deck pad changed"); refreshControls() } }
 
     private fun openDeckRing(why: String) {
         val deck = SessionState.deckPad
@@ -967,6 +971,8 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
                     onUnfoldedControls = ::chooseUnfoldedControls,
                     unfoldedControlsWithController = unfoldedControlsWithController,
                     onUnfoldedControlsWithController = ::chooseUnfoldedControlsWithController,
+                    coverControls = coverControls,
+                    onCoverControls = ::chooseCoverControls,
                     onBackground = { drawerOpen = false; pip.background(); moveTaskToBack(true) },
                     onShareLogs = { drawerOpen = false; shareCurrentSessionLogs() },
                     onStop = { drawerOpen = false; SessionService.stop(this@SessionActivity); finish() },
@@ -1463,6 +1469,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
         pipAutoEnter = SessionPrefs.pipAutoEnter(this)
         unfoldedControls = SessionPrefs.unfoldedControls(this)
         unfoldedControlsWithController = SessionPrefs.unfoldedControlsWithController(this)
+        coverControls = SessionPrefs.coverControls(this)
         picturePosition = SessionPrefs.picturePosition(this)
         hudOn = SessionPrefs.hudEnabled(this)
         hudFps = SessionPrefs.hudShowFps(this)
@@ -2522,9 +2529,31 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
         applyUnfoldedControls()
     }
 
+    private fun chooseCoverControls(on: Boolean) {
+        SessionPrefs.setCoverControls(this, on)
+        coverControls = on
+        applyCoverControls()
+    }
+
     private fun refreshControls() {
         applyUnfoldedControls()
+        applyCoverControls()
         updateOnScreenControls()
+    }
+
+    private fun applyCoverControls() {
+        val wanted = coverControls && resumed && !pipUi && !isInPictureInPictureMode &&
+            com.droiddeck.launcher.session.SessionDisplay.foldable(this) &&
+            SessionState.mode == SessionService.MODE_STEAM && SessionState.deckPad
+        if (wanted == coverShown) return
+        coverShown = wanted
+        if (wanted) {
+            coverScreen.start(lifecycleScope) { context ->
+                com.droiddeck.launcher.ui.DeckControlsPanel(context, onClose = {}, ::tapSteamButton, ::tapQam, padBridge, cover = true)
+            }
+        } else {
+            coverScreen.stop()
+        }
     }
 
     private fun applyUnfoldedControls() {
@@ -3103,6 +3132,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
         if (::scrollTouch.isInitialized) scrollTouch.cancel()
         if (::padMouse.isInitialized) padMouse.reset()
         resumed = false
+        applyCoverControls()
         updatePointerCapture()
         updatePadMotion()
         keyboard?.takeIf { it.shown }?.hide()
