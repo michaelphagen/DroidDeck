@@ -38,6 +38,7 @@ internal class AddonPack(
     private val tag get() = "pack-$name-${sha256.take(16)}"
     private val urls get() = listOfNotNull(
         "https://github.com/$REPO/releases/download/$tag/$name.tar.zst",
+        "https://github.com/michaelphagen/DroidDeck/releases/download/$tag/$name.tar.zst",
         BuildConfig.PR_NUMBER.takeIf { it > 0 }?.let { "https://github.com/$PR_REPO/releases/download/pr-$it/$tag.tar.zst" },
     )
 
